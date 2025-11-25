@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Netflix CSM</title>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        /* --- Global & Root Variables --- */
+        :root {
+            --primary-color: #e50914; /* Netflix Red */
+            --primary-hover: #c11119;
+            --background-color: #111;
+            --text-color: #ffffff;
+            --input-bg: rgba(22, 22, 22, 0.7);
+            --input-border: rgba(128, 128, 128, 0.7);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: black;
+            color: var(--text-color);
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* --- View Management --- */
+        .view {
+            display: none;
+            width: 100%;
+            min-height: 100vh;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        /* --- BUTTONS --- */
+        .red-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .red-btn:hover { background-color: var(--primary-hover); }
+
+        .red-btn.small { padding: 7px 17px; font-size: 0.9rem; font-weight: bold; }
+        .red-btn.big { 
+            font-size: 1.5rem; 
+            padding: 12px 24px; 
+            font-weight: 500; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+        }
+        .red-btn.full { width: 100%; padding: 12px; font-size: 1rem; margin-top: 20px; font-weight: bold; }
+
+        .text-btn {
+            background: transparent;
+            color: white;
+            border: none;
+            font-size: 1.1rem;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .text-btn:hover { text-decoration: underline; }
+
+        /* --- LANDING PAGE STYLES --- */
+        #landing-view {
+            background-image: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 0.8) 100%), 
+                              linear-gradient(to right, rgba(0,0,0,0.8), rgba(0,0,0,0.5), rgba(0,0,0,0.8)),
+                              url('https://assets.nflxext.com/ffe/siteui/vlv3/51e5354A-056A-444E-A023-01878A03E39B/33580556-cfaa-4573-b3c9-3a5f1f5e1b9c/IN-en-20240408-popsignuptwoweeks-perspective_alpha_website_small.jpg');
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden; /* Prevents scrolling on landing page */
+            display: flex; /* Use flex via 'active' class, but we need alignment */
+            flex-direction: column;
+        }
+
+        .landing-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 50px;
+            z-index: 10;
+        }
+
+        .landing-header .logo { display: flex; align-items: center; gap: 10px; }
+        .landing-header .logo img { height: 40px; }
+        .landing-header .logo-text { font-size: 1.5rem; font-weight: bold; color: var(--primary-color); }
+
+        .landing-nav { display: flex; gap: 20px; align-items: center; }
+
+        .lang-select {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid #aaa;
+            color: white;
+            padding: 6px 20px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .landing-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            color: white;
+            padding: 0 20px;
+            z-index: 10;
+            margin-top: -50px; /* Visual adjustment */
+        }
+
+        .landing-content h1 {
+            font-size: 3.5rem;
+            font-weight: 900;
+            margin-bottom: 1rem;
+            max-width: 800px;
+        }
+
+        .sub-header { font-size: 1.5rem; margin-bottom: 1.5rem; font-weight: 400; }
+        .cta-text { font-size: 1.25rem; margin-bottom: 1.5rem; }
+
+        .email-signup-container {
+            display: flex;
+            flex-direction: row;
+            gap: 8px;
+            width: 100%;
+            max-width: 600px;
+            align-items: stretch;
+        }
+
+        /* Floating Labels for Inputs */
+        .input-wrapper {
+            position: relative;
+            flex-grow: 1;
+        }
+
+        .input-wrapper input {
+            width: 100%;
+            padding: 24px 16px 10px;
+            background: rgba(22, 22, 22, 0.7);
+            border: 1px solid rgba(128, 128, 128, 0.7);
+            border-radius: 4px;
+            color: white;
+            font-size: 1rem;
+            height: 100%;
+        }
+
+        .input-wrapper.dark input { background: #333; border: none; height: 50px; border-radius: 4px; }
+
+        .input-wrapper label {
+            position: absolute;
+            top: 50%;
+            left: 16px;
+            transform: translateY(-50%);
+            color: #aaa;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            pointer-events: none;
+        }
+
+        .input-wrapper input:focus + label,
+        .input-wrapper input:not(:placeholder-shown) + label {
+            top: 7px;
+            transform: translateY(0);
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+
+        .input-wrapper input:focus { outline: 2px solid white; outline-offset: 2px; }
+
+        /* --- LOGIN & REGISTER SHARED --- */
+        #login-view, #register-view {
+            background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://assets.nflxext.com/ffe/siteui/vlv3/51e5354A-056A-444E-A023-01878A03E39B/33580556-cfaa-4573-b3c9-3a5f1f5e1b9c/IN-en-20240408-popsignuptwoweeks-perspective_alpha_website_small.jpg');
+            background-size: cover;
+            position: relative;
+            /* FIX: Force full height and no scroll on desktop */
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden; 
+        }
+
+        .simple-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            z-index: 10;
+        }
+        .header-logo { height: 45px; cursor: pointer; }
+
+        .auth-container {
+            display: flex;
+            justify-content: center;
+            align-items: center; /* Centers vertically */
+            height: 100vh; /* Takes full height */
+            width: 100%;
+            padding: 0;
+        }
+
+        .auth-box {
+            background-color: rgba(0, 0, 0, 0.75);
+            padding: 60px 68px 40px;
+            border-radius: 4px;
+            width: 100%;
+            max-width: 450px;
+            height: fit-content;
+            /* Ensure it doesn't overflow on small screens */
+            max-height: 90vh; 
+            overflow-y: auto; /* Scroll INSIDE the box if needed, not the page */
+        }
+        
+        /* Hide scrollbar for auth-box chrome/safari */
+        .auth-box::-webkit-scrollbar { display: none; }
+        .auth-box { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .auth-box h1 { font-size: 2rem; margin-bottom: 28px; font-weight: 700; }
+        .auth-box p { margin-bottom: 15px; color: #ccc; }
+        .auth-box form { display: flex; flex-direction: column; gap: 16px; }
+
+        .login-help {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: #b3b3b3;
+            margin-top: 10px;
+        }
+        .login-help a { color: #b3b3b3; text-decoration: none; }
+        .login-help a:hover { text-decoration: underline; }
+
+        .auth-footer { margin-top: 40px; color: #737373; font-size: 1rem; }
+        .switch-note { color: #737373; margin-top: 16px; }
+        .switch-note a { color: white; cursor: pointer; }
+        .switch-note a:hover { text-decoration: underline; }
+        .recaptcha-note { font-size: 0.8rem; margin-top: 10px; text-align: left; }
+
+        .error-note { color: #e87c03; font-size: 0.9rem; margin-top: 10px; }
+
+        /* --- MAIN APP STYLES --- */
+        #app-view { background-color: var(--background-color); }
+        .header {
+            position: fixed; top: 0; width: 100%; display: flex; justify-content: space-between; align-items: center;
+            padding: 20px 50px; background-color: transparent; z-index: 100; transition: background-color 0.4s;
+        }
+        .header.scrolled { background-color: var(--background-color); }
+        .header-left, .header-right, .main-nav, .user-profile { display: flex; align-items: center; gap: 25px; }
+        .logo img { height: 25px; }
+        .logo .logo-subtext { color: var(--primary-color); font-weight: bold; font-size: 1.2rem; margin-left: 5px; }
+        .main-nav a { color: var(--text-color); text-decoration: none; font-weight: 500; transition: color 0.3s; cursor: pointer; }
+        .main-nav a:hover { color: #b3b3b3; }
+        .search-box { display: flex; align-items: center; background: rgba(0, 0, 0, 0.7); border: 1px solid rgba(255, 255, 255, 0.7); padding: 5px; border-radius: 4px; }
+        .search-icon { cursor: pointer; color: #fff; }
+        #search-input { background: transparent; border: none; color: white; padding: 5px; width: 0; opacity: 0; transition: all 0.5s ease; }
+        .search-box:hover #search-input, #search-input:focus { width: 200px; opacity: 1; margin-left: 5px; }
+
+        #hero {
+            height: 90vh; background-size: cover; background-position: center; position: relative;
+            display: flex; align-items: center; padding-left: 50px;
+        }
+        #hero::after {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to right, rgba(17, 17, 17, 0.8) 20%, transparent 60%), linear-gradient(to top, #111 10%, transparent 40%);
+        }
+        .hero-content { z-index: 10; max-width: 40%; }
+        .hero-content h1 { font-size: 3.5rem; margin-bottom: 20px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        .hero-content p { font-size: 1.1rem; line-height: 1.5; margin-bottom: 20px; max-height: 100px; overflow: hidden; }
+        .hero-button {
+            background-color: white; color: black; border: none; padding: 12px 25px;
+            font-size: 1rem; font-weight: bold; border-radius: 5px; cursor: pointer; transition: background-color 0.3s;
+        }
+        .hero-button:hover { background-color: rgba(255, 255, 255, 0.8); }
+
+        .movie-row { padding: 0 50px; }
+        .movie-row h2 { font-size: 1.6rem; margin: 25px 0 15px; }
+        .movie-carousel-wrapper { position: relative; }
+        .movie-carousel { display: flex; overflow-x: scroll; overflow-y: hidden; scroll-behavior: smooth; scrollbar-width: none; }
+        .movie-carousel::-webkit-scrollbar { display: none; }
+        .movie-card { flex: 0 0 180px; margin-right: 10px; position: relative; cursor: pointer; transition: transform 0.3s ease, z-index 0.3s ease; }
+        .movie-card img { width: 100%; height: 260px; object-fit: cover; border-radius: 5px; }
+        .movie-card:hover { transform: scale(1.15); z-index: 20; }
+        .scroll-arrow {
+            position: absolute; top: 0; bottom: 0; width: 50px;
+            background-color: rgba(0, 0, 0, 0.5); color: white; border: none;
+            font-size: 2.5rem; z-index: 30; cursor: pointer;
+            display: none; align-items: center; justify-content: center;
+        }
+        .movie-carousel-wrapper:hover .scroll-arrow { display: flex; }
+        .left-arrow { left: 0; }
+        .right-arrow { right: 0; }
+
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); align-items: center; justify-content: center; }
+        .modal.show { display: flex; }
+        .modal-content { background-color: #181818; width: 90%; max-width: 800px; border-radius: 10px; overflow: hidden; position: relative; max-height: 90vh; display: flex; flex-direction: column; }
+        .close-button { color: #aaa; position: absolute; top: 15px; right: 25px; font-size: 28px; font-weight: bold; cursor: pointer; z-index: 2; }
+        .modal-body-wrapper { overflow-y: auto; }
+        .modal-video { padding-top: 56.25%; position: relative; background-color: #000; }
+        .modal-video iframe, .modal-video img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+        .modal-details { padding: 20px; }
+        .modal-details h2 { font-size: 2rem; margin-bottom: 10px; }
+        .modal-details p { margin-top: 15px; font-size: 1rem; line-height: 1.5; }
+
+        .user-profile { position: relative; cursor: pointer; }
+        .user-profile .fa-caret-down { margin-left: 5px; transition: transform 0.3s ease; }
+        .user-profile.open .fa-caret-down { transform: rotate(180deg); }
+        .dropdown-menu { display: none; position: absolute; top: 50px; right: 0; background-color: rgba(0, 0, 0, 0.9); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 4px; min-width: 220px; padding: 10px; z-index: 110; }
+        .dropdown-menu.show { display: block; }
+        .dropdown-menu .user-info { padding: 10px; display: flex; flex-direction: column; }
+        .dropdown-menu .dropdown-username { font-weight: bold; font-size: 1rem; }
+        .dropdown-menu .dropdown-email { font-size: 0.8rem; color: #aaa; margin-top: 5px; }
+        .dropdown-menu hr { border: none; height: 1px; background-color: rgba(255, 255, 255, 0.15); margin: 10px 0; }
+        .dropdown-menu a { display: block; color: white; text-decoration: none; padding: 10px 15px; font-size: 0.9rem; border-radius: 4px; }
+        .dropdown-menu a:hover { background-color: rgba(255, 255, 255, 0.1); }
+        .dropdown-menu a.sign-out { text-align: center; margin-top: 10px; }
+
+        /* Mobile Responsiveness - Restore scrolling for small screens */
+        @media (max-width: 740px), (max-height: 700px) {
+            #login-view, #register-view { 
+                height: auto; 
+                min-height: 100vh; 
+                overflow-y: auto; 
+            }
+            .auth-container {
+                height: auto;
+                min-height: 100vh;
+                padding: 80px 20px 40px; /* Add padding so header/footer don't overlap */
+            }
+            .landing-header { padding: 20px; }
+            .landing-content h1 { font-size: 2rem; }
+            .email-signup-container { flex-direction: column; }
+            .red-btn.big { justify-content: center; margin-top: 10px; font-size: 1.1rem; }
+            .hero-content { max-width: 100%; text-align: center; padding-right: 20px; }
+            .header { padding: 10px 20px; }
+            #hero { padding-left: 20px; align-items: flex-end; padding-bottom: 40px; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- 
+      VIEW 0: LANDING PAGE (Matches your screenshot)
+    -->
+    <div id="landing-view" class="view active">
+        <div class="landing-header">
+            <div class="logo">
+                <img src="https://image.tmdb.org/t/p/original/wwemzKWzjKYJFfCeiB57q3r4Bcm.svg" alt="Netflix">
+                <span class="logo-text">CSM</span>
+            </div>
+            <div class="landing-nav">
+                <select class="lang-select">
+                    <option>English</option>
+                    <option>Hindi</option>
+                </select>
+                <button id="landing-signin-btn" class="red-btn small">Sign In</button>
+            </div>
+        </div>
+
+        <div class="landing-content">
+            <h1>Unlimited movies, shows, and more</h1>
+            <!-- Changed text to be FREE as requested -->
+            <p class="sub-header">Watch anywhere. Free to use.</p>
+            <p class="cta-text">Ready to watch? Enter your email to create or restart your membership.</p>
+            
+            <div class="email-signup-container">
+                <div class="input-wrapper">
+                    <input type="email" id="landing-email" placeholder=" " required>
+                    <label for="landing-email">Email address</label>
+                </div>
+                <button id="get-started-btn" class="red-btn big">Get Started <i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 
+      VIEW 1: LOGIN 
+    -->
+    <div id="login-view" class="view auth-view">
+        <!-- Header for Login View to go back home -->
+        <div class="simple-header">
+            <img src="https://image.tmdb.org/t/p/original/wwemzKWzjKYJFfCeiB57q3r4Bcm.svg" alt="Netflix" class="header-logo" id="login-logo-link">
+        </div>
+
+        <div class="auth-container">
+            <div class="auth-box">
+                <h1>Sign In</h1>
+                <form id="login-form">
+                    <div class="input-wrapper dark">
+                        <input type="email" id="login-email" placeholder=" " required>
+                        <label for="login-email">Email or mobile number</label>
+                    </div>
+                    <div class="input-wrapper dark">
+                        <input type="password" id="login-password" placeholder=" " required>
+                        <label for="login-password">Password</label>
+                    </div>
+                    <button type="submit" id="login-button" class="red-btn full">Sign In</button>
+                    
+                    <div class="login-help">
+                        <div class="remember-me">
+                            <input type="checkbox" id="remember">
+                            <label for="remember">Remember me</label>
+                        </div>
+                        <a href="#" id="forgot-password-link">Forgot Password?</a>
+                    </div>
+                </form>
+                <p id="login-error-message" class="error-note"></p>
+                <div class="auth-footer">
+                    <p class="switch-note">New to Netflix? <a id="show-register-link">Sign up now</a>.</p>
+                    <p class="recaptcha-note">This page is protected by Google reCAPTCHA to ensure you're not a bot.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 
+      VIEW 2: REGISTER 
+    -->
+    <div id="register-view" class="view auth-view">
+         <div class="simple-header">
+            <img src="https://image.tmdb.org/t/p/original/wwemzKWzjKYJFfCeiB57q3r4Bcm.svg" alt="Netflix" class="header-logo" id="register-logo-link">
+             <button id="register-signin-btn" class="text-btn">Sign In</button>
+        </div>
+
+        <div class="auth-container">
+            <div class="auth-box">
+                <h1>Sign Up</h1>
+                <p>Just a few more steps and you're done!</p>
+                <p>We hate paperwork, too.</p>
+                <form id="register-form">
+                    <div class="input-wrapper dark">
+                        <input type="text" id="register-username" placeholder=" " required>
+                        <label for="register-username">Name</label>
+                    </div>
+                    <div class="input-wrapper dark">
+                        <input type="email" id="register-email" placeholder=" " required>
+                        <label for="register-email">Email address</label>
+                    </div>
+                    <div class="input-wrapper dark">
+                        <input type="password" id="register-password" placeholder=" " required>
+                        <label for="register-password">Add a password</label>
+                    </div>
+                    <button type="submit" id="register-button" class="red-btn full">Sign Up</button>
+                </form>
+                <p id="register-error-message" class="error-note"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 
+      VIEW 3: MAIN APP
+    -->
+    <div id="app-view" class="view">
+        <header class="header">
+            <div class="header-left">
+                <div class="logo">
+                    <img src="https://image.tmdb.org/t/p/original/wwemzKWzjKYJFfCeiB57q3r4Bcm.svg" alt="Logo">
+                    <span class="logo-subtext">CSM</span>
+                </div>
+                <nav class="main-nav">
+                    <a id="home-link">Home</a>
+                    <a id="wishlist-link">My Wishlist</a>
+                </nav>
+            </div>
+            <div class="header-right">
+                <div class="search-box">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" id="search-input" placeholder="Titles, genres...">
+                </div>
+                <div class="user-profile">
+                    <i class="fas fa-user"></i>
+                    <span id="username-display"></span>
+                    <i class="fas fa-caret-down"></i>
+                    <div id="account-dropdown" class="dropdown-menu">
+                        <div class="user-info">
+                            <span id="dropdown-username" class="dropdown-username"></span>
+                            <span id="dropdown-email" class="dropdown-email"></span>
+                        </div>
+                        <hr>
+                        <a href="#" id="sign-out-link" class="sign-out">Sign Out</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <!-- Hero section will be populated by JS -->
+            <section id="hero"></section>
+            <!-- Movie rows will be populated by JS -->
+            <div id="movie-rows"></div>
+        </main>
+
+        <!-- Movie Detail Modal -->
+        <div id="movie-modal" class="modal">
+            <div class="modal-content">
+                <span class="close-button">&times;</span>
+                <div class="modal-body-wrapper">
+                    <!-- Modal body will be populated by JS -->
+                    <div id="modal-body"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase and App Logic -->
+    <script type="module">
+        // --- Firebase SDK Imports ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
+        import {
+            getAuth,
+            onAuthStateChanged,
+            createUserWithEmailAndPassword,
+            signInWithEmailAndPassword,
+            signOut,
+            sendPasswordResetEmail
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import {
+            getFirestore,
+            doc,
+            setDoc,
+            getDoc,
+            collection,
+            deleteDoc,
+            onSnapshot,
+            query,
+            setLogLevel
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Firebase Config and Init ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCKCs5ut2ZYJ6p8K5dghOifkbyW81srWFU",
+            authDomain: "mini-netflix-7693c.firebaseapp.com",
+            projectId: "mini-netflix-7693c",
+            storageBucket: "mini-netflix-7693c.firebasestorage.app",
+            messagingSenderId: "261484188855",
+            appId: "1:261484188855:web:1c8b197f81719d6090e932",
+            measurementId: "G-HTSYNR8HTD"
+        };
+
+        let app, auth, db, analytics;
+
+        try {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            analytics = getAnalytics(app);
+            setLogLevel('Debug');
+        } catch (e) {
+            console.error("Error initializing Firebase:", e);
+        }
+
+        // --- TMDB API Config ---
+        const API_KEY = '7ab2790895e96c8739db4eff8813d6d0';
+        const BASE_URL = 'https://api.themoviedb.org/3';
+
+        // --- App State ---
+        let currentUserId = null;
+        let currentUserData = null;
+        let localWishlist = [];
+        let wishlistUnsubscribe = null;
+
+        // --- DOM Elements ---
+        const views = document.querySelectorAll('.view');
+        const landingView = document.getElementById('landing-view');
+        const loginView = document.getElementById('login-view');
+        const registerView = document.getElementById('register-view');
+        const appView = document.getElementById('app-view');
+
+        // Landing Elements
+        const landingSignInBtn = document.getElementById('landing-signin-btn');
+        const landingEmailInput = document.getElementById('landing-email');
+        const getStartedBtn = document.getElementById('get-started-btn');
+
+        // Auth Forms
+        const loginForm = document.getElementById('login-form');
+        const loginEmail = document.getElementById('login-email');
+        const loginPassword = document.getElementById('login-password');
+        const loginError = document.getElementById('login-error-message');
+        const loginButton = document.getElementById('login-button');
+        const forgotPasswordLink = document.getElementById('forgot-password-link');
+
+        const registerForm = document.getElementById('register-form');
+        const registerUsername = document.getElementById('register-username');
+        const registerEmail = document.getElementById('register-email');
+        const registerPassword = document.getElementById('register-password');
+        const registerError = document.getElementById('register-error-message');
+        const registerButton = document.getElementById('register-button');
+        const registerSignInBtn = document.getElementById('register-signin-btn');
+
+        const showRegisterLink = document.getElementById('show-register-link');
+        const loginLogoLink = document.getElementById('login-logo-link');
+        const registerLogoLink = document.getElementById('register-logo-link');
+
+
+        // Main App
+        const header = document.querySelector('.header');
+        const usernameDisplay = document.getElementById('username-display');
+        const heroSection = document.getElementById('hero');
+        const movieRowsContainer = document.getElementById('movie-rows');
+        const searchInput = document.getElementById('search-input');
+        const modal = document.getElementById('movie-modal');
+        const modalBody = document.getElementById('modal-body');
+        const closeModalButton = document.querySelector('.close-button');
+        const homeLink = document.getElementById('home-link');
+        const wishlistLink = document.getElementById('wishlist-link');
+        const userProfile = document.querySelector('.user-profile');
+        const accountDropdown = document.getElementById('account-dropdown');
+        const dropdownUsername = document.getElementById('dropdown-username');
+        const dropdownEmail = document.getElementById('dropdown-email');
+        const signOutLink = document.getElementById('sign-out-link');
+
+        // --- API Endpoints ---
+        const movieCategories = [
+            { title: 'Trending Now', endpoint: '/trending/movie/week' },
+            { title: 'Netflix Originals', endpoint: '/discover/tv?with_networks=213' },
+            { title: 'Top Rated', endpoint: '/movie/top_rated' },
+            { title: 'Action Movies', endpoint: '/discover/movie?with_genres=28' },
+            { title: 'Comedy Movies', endpoint: '/discover/movie?with_genres=35' },
+            { title: 'Horror Movies', endpoint: '/discover/movie?with_genres=27' }
+        ];
+
+        // --- View Management ---
+        function showView(viewId) {
+            views.forEach(view => {
+                if (view.id === viewId) {
+                    view.classList.add('active');
+                } else {
+                    view.classList.remove('active');
+                }
+            });
+        }
+
+        // --- Firebase Auth & Data Logic ---
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // User is signed in -> Go to App
+                currentUserId = user.uid;
+                const userProfileRef = doc(db, `users/${currentUserId}/profile`, 'data');
+                try {
+                    const docSnap = await getDoc(userProfileRef);
+                    if (docSnap.exists()) {
+                        currentUserData = docSnap.data();
+                        updateUserInfoUI(currentUserData.name, currentUserData.email);
+                    } else {
+                        updateUserInfoUI(user.email, user.email);
+                    }
+                } catch (e) { console.error(e); }
+
+                await setupWishlistListener();
+                initializeAppUI();
+                showView('app-view');
+
+            } else {
+                // User is signed out -> Go to Landing
+                console.log("User is signed out.");
+                currentUserId = null;
+                currentUserData = null;
+                localWishlist = [];
+                if (wishlistUnsubscribe) { wishlistUnsubscribe(); wishlistUnsubscribe = null; }
+                showView('landing-view');
+            }
+        });
+
+        // Landing Page Logic
+        landingSignInBtn.addEventListener('click', () => showView('login-view'));
+
+        getStartedBtn.addEventListener('click', () => {
+            const email = landingEmailInput.value;
+            if (email) {
+                registerEmail.value = email; // Pre-fill register form
+                // Focus password field in register form for better UX
+                setTimeout(() => registerPassword.focus(), 100);
+            }
+            showView('register-view');
+        });
+
+        // Header Logos -> Back to Landing
+        loginLogoLink.addEventListener('click', () => showView('landing-view'));
+        registerLogoLink.addEventListener('click', () => showView('landing-view'));
+
+        // Auth Navigation
+        showRegisterLink.addEventListener('click', (e) => { e.preventDefault(); showView('register-view'); });
+        registerSignInBtn.addEventListener('click', () => showView('login-view'));
+
+
+        // Forgot Password Logic
+        forgotPasswordLink.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const email = loginEmail.value;
+            
+            if (!email) {
+                loginError.textContent = "Please enter your email address above to reset your password.";
+                loginEmail.focus();
+                return;
+            }
+
+            try {
+                console.log("Attempting to send reset email to:", email);
+                await sendPasswordResetEmail(auth, email);
+                // SECURITY NOTE: Firebase doesn't throw an error if the user doesn't exist.
+                // It only throws error for invalid email format.
+                alert(`If an account exists for ${email}, a password reset link has been sent. Please check your Inbox and Spam folder.`);
+                loginError.textContent = ""; // Clear error if any
+            } catch (error) {
+                console.error(error);
+                loginError.textContent = "Error: " + error.message;
+            }
+        });
+
+
+        // Handle User Registration
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = registerUsername.value;
+            const email = registerEmail.value;
+            const password = registerPassword.value;
+            setLoading(registerButton, true);
+            registerError.textContent = '';
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                const userProfileRef = doc(db, `users/${user.uid}/profile`, 'data');
+                await setDoc(userProfileRef, { name: name, email: email, createdAt: new Date() });
+            } catch (error) {
+                console.error("Registration Error:", error);
+                registerError.textContent = error.message;
+            } finally {
+                setLoading(registerButton, false);
+            }
+        });
+
+        // Handle User Login
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = loginEmail.value;
+            const password = loginPassword.value;
+            setLoading(loginButton, true);
+            loginError.textContent = '';
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                console.error("Login Error:", error);
+                loginError.textContent = "Incorrect email or password.";
+            } finally {
+                setLoading(loginButton, false);
+            }
+        });
+
+        // Handle User Logout
+        signOutLink.addEventListener('click', async (e) => {
+            e.preventDefault();
+            try { await signOut(auth); } catch (error) { console.error("Sign Out Error:", error); }
+        });
+
+        function setLoading(button, isLoading) {
+            if (isLoading) {
+                button.disabled = true;
+                button.textContent = 'Loading...';
+            } else {
+                button.disabled = false;
+                button.textContent = button.id === 'login-button' ? 'Sign In' : 'Sign Up';
+            }
+        }
+
+        // --- Main App UI & Data ---
+        function updateUserInfoUI(name, email) {
+            usernameDisplay.textContent = name;
+            dropdownUsername.textContent = name;
+            dropdownEmail.textContent = email;
+        }
+
+        async function setupWishlistListener() {
+            if (!currentUserId) return;
+            if (wishlistUnsubscribe) wishlistUnsubscribe();
+            const wishlistColRef = collection(db, `users/${currentUserId}/wishlist`);
+            const q = query(wishlistColRef);
+            wishlistUnsubscribe = onSnapshot(q, (querySnapshot) => {
+                localWishlist = querySnapshot.docs.map(doc => doc.id);
+                if (movieRowsContainer.querySelector('h2')?.textContent.includes('My Wishlist')) {
+                    displayWishlist();
+                }
+                const modalButton = modal.querySelector(`[data-action="toggle-wishlist"]`);
+                if (modalButton) {
+                    const movieId = modalButton.dataset.movieId;
+                    const isInWishlist = localWishlist.includes(String(movieId));
+                    modalButton.innerHTML = `<i class="fas ${isInWishlist ? 'fa-check' : 'fa-plus'}"></i> ${isInWishlist ? 'In Wishlist' : 'Add to Wishlist'}`;
+                }
+            }, (error) => { console.error("Error listening to wishlist:", error); });
+        }
+
+        async function fetchApi(endpoint) {
+            const url = `${BASE_URL}${endpoint}${endpoint.includes('?') ? '&' : '?'}api_key=${API_KEY}&language=en-US`;
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Network response error');
+                return await response.json();
+            } catch (error) { console.error('API Fetch Error:', error); return null; }
+        }
+
+        function createHero(movies) {
+            if (!movies || movies.length === 0) return;
+            const randomMovie = movies[Math.floor(Math.random() * movies.length)];
+            const type = randomMovie.media_type || 'movie';
+            heroSection.style.backgroundImage = `url(https://image.tmdb.org/t/p/original${randomMovie.backdrop_path})`;
+            heroSection.innerHTML = `
+                <div class="hero-content">
+                    <h1>${randomMovie.title || randomMovie.name}</h1>
+                    <p>${randomMovie.overview.substring(0, 150)}...</p>
+                    <button class="hero-button" data-action="open-modal" data-movie-id="${randomMovie.id}" data-type="${type}">
+                        <i class="fas fa-play"></i> More Info
+                    </button>
+                </div>
+            `;
+        }
+
+        function createMovieCard(movie, type) {
+            if (!movie.poster_path) return null;
+            const card = document.createElement('div');
+            card.className = 'movie-card';
+            card.dataset.action = 'open-modal';
+            card.dataset.movieId = movie.id;
+            card.dataset.type = type;
+            card.innerHTML = `<img src="https://image.tmdb.org/t/p/w500${movie.poster_path}" alt="${movie.title || movie.name}">`;
+            return card;
+        }
+
+        function createMovieRow(title, movies, type) {
+            const row = document.createElement('div');
+            row.className = 'movie-row';
+            const carousel = document.createElement('div');
+            carousel.className = 'movie-carousel';
+            movies.forEach(movie => {
+                const itemType = movie.media_type || type;
+                const card = createMovieCard(movie, itemType);
+                if (card) carousel.appendChild(card);
+            });
+            row.innerHTML = `<h2>${title}</h2>`;
+            const wrapper = document.createElement('div');
+            wrapper.className = 'movie-carousel-wrapper';
+            wrapper.appendChild(carousel);
+            const leftArrow = document.createElement('button');
+            leftArrow.className = 'scroll-arrow left-arrow';
+            leftArrow.innerHTML = '&lt;';
+            leftArrow.onclick = () => carousel.scrollBy({ left: -carousel.clientWidth, behavior: 'smooth' });
+            const rightArrow = document.createElement('button');
+            rightArrow.className = 'scroll-arrow right-arrow';
+            rightArrow.innerHTML = '&gt;';
+            rightArrow.onclick = () => carousel.scrollBy({ left: carousel.clientWidth, behavior: 'smooth' });
+            wrapper.appendChild(leftArrow);
+            wrapper.appendChild(rightArrow);
+            row.appendChild(wrapper);
+            return row;
+        }
+
+        async function displayAllMovieRows() {
+            heroSection.style.display = 'flex';
+            movieRowsContainer.innerHTML = '<h2>Loading...</h2>';
+            const trendingData = await fetchApi('/trending/movie/week');
+            if (trendingData && trendingData.results) createHero(trendingData.results);
+            else {
+                heroSection.innerHTML = '<div class="hero-content"><h1>Error loading content</h1></div>';
+                movieRowsContainer.innerHTML = '<h2><i class="fas fa-exclamation-triangle" style="color: #e87c03;"></i> Error loading movies.</h2><p style="text-align: center; padding: 20px;">Please ensure your TMDB API key in the code is correct and active.</p>';
+                return;
+            }
+            movieRowsContainer.innerHTML = '';
+            for (const category of movieCategories) {
+                const data = await fetchApi(category.endpoint);
+                if (data && data.results) {
+                    const type = category.endpoint.includes('/tv') ? 'tv' : 'movie';
+                    const row = createMovieRow(category.title, data.results, type);
+                    movieRowsContainer.appendChild(row);
+                }
+            }
+        }
+
+        async function handleSearch(event) {
+            if (event.key === 'Enter') {
+                const query = searchInput.value.trim();
+                if (query) {
+                    heroSection.style.display = 'none';
+                    movieRowsContainer.innerHTML = '<h2>Searching...</h2>';
+                    const data = await fetchApi(`/search/multi?query=${encodeURIComponent(query)}`);
+                    movieRowsContainer.innerHTML = '';
+                    const searchResults = data.results.filter(item => (item.media_type === 'movie' || item.media_type === 'tv') && item.poster_path);
+                    const row = createMovieRow(`Results for "${query}"`, searchResults, 'multi');
+                    movieRowsContainer.appendChild(row);
+                } else { displayAllMovieRows(); }
+            }
+        }
+
+        async function openModal(id, type) {
+            if (!type || type === 'multi') {
+                const details = await fetchApi(`/movie/${id}`);
+                type = details.title ? 'movie' : 'tv';
+            }
+            const details = await fetchApi(`/${type}/${id}`);
+            const videos = await fetchApi(`/${type}/${id}/videos`);
+            const trailer = videos.results.find(v => v.type === 'Trailer');
+            const isInWishlist = localWishlist.includes(String(id));
+            modalBody.innerHTML = `
+                <div class="modal-video">
+                    ${trailer ? `<iframe src="https://www.youtube.com/embed/${trailer.key}?autoplay=1&mute=1" allow="autoplay; fullscreen"></iframe>` : `<img src="https://image.tmdb.org/t/p/original${details.backdrop_path}" alt="Backdrop" />`}
+                </div>
+                <div class="modal-details">
+                    <h2>${details.title || details.name}</h2>
+                    <button class="hero-button" data-action="toggle-wishlist" data-movie-id="${id}">
+                        <i class="fas ${isInWishlist ? 'fa-check' : 'fa-plus'}"></i> ${isInWishlist ? 'In Wishlist' : 'Add to Wishlist'}
+                    </button>
+                    <p>${details.overview}</p>
+                </div>
+            `;
+            modal.classList.add('show');
+        }
+
+        function closeModal() {
+            modal.classList.remove('show');
+            const iframe = modalBody.querySelector('iframe');
+            if (iframe) iframe.src = '';
+            modalBody.innerHTML = '';
+        }
+
+        async function toggleWishlist(movieId) {
+            if (!currentUserId) return;
+            const stringId = String(movieId);
+            const wishlistDocRef = doc(db, `users/${currentUserId}/wishlist`, stringId);
+            try {
+                if (localWishlist.includes(stringId)) {
+                    await deleteDoc(wishlistDocRef);
+                } else {
+                    await setDoc(wishlistDocRef, { addedAt: new Date() });
+                }
+            } catch (error) { console.error("Error toggling wishlist item:", error); }
+        }
+
+        async function displayWishlist() {
+            heroSection.style.display = 'none';
+            movieRowsContainer.innerHTML = '<h2>Loading Wishlist...</h2>';
+            if (localWishlist.length === 0) {
+                movieRowsContainer.innerHTML = '<div class="movie-row"><h2>My Wishlist is empty.</h2></div>';
+                return;
+            }
+            const wishlistMovies = [];
+            for (const id of localWishlist) {
+                let item = await fetchApi(`/movie/${id}`);
+                let type = 'movie';
+                if (!item || item.success === false) {
+                    item = await fetchApi(`/tv/${id}`);
+                    type = 'tv';
+                }
+                if (item && item.success !== false) {
+                    item.media_type = type;
+                    wishlistMovies.push(item);
+                }
+            }
+            movieRowsContainer.innerHTML = '';
+            const row = createMovieRow('My Wishlist', wishlistMovies, 'multi');
+            movieRowsContainer.appendChild(row);
+        }
+
+        appView.addEventListener('click', (e) => {
+            const modalTrigger = e.target.closest('[data-action="open-modal"]');
+            if (modalTrigger) {
+                const { movieId, type } = modalTrigger.dataset;
+                if (movieId && type) openModal(movieId, type);
+                return;
+            }
+            const wishlistTrigger = e.target.closest('[data-action="toggle-wishlist"]');
+            if (wishlistTrigger) {
+                const { movieId } = wishlistTrigger.dataset;
+                if (movieId) toggleWishlist(movieId);
+                return;
+            }
+        });
+
+        homeLink.addEventListener('click', (e) => { e.preventDefault(); displayAllMovieRows(); });
+        wishlistLink.addEventListener('click', (e) => { e.preventDefault(); displayWishlist(); });
+        userProfile.addEventListener('click', (event) => {
+            event.stopPropagation();
+            accountDropdown.classList.toggle('show');
+            userProfile.classList.toggle('open');
+        });
+        window.addEventListener('click', () => {
+            if (accountDropdown.classList.contains('show')) {
+                accountDropdown.classList.remove('show');
+                userProfile.classList.remove('open');
+            }
+        });
+        searchInput.addEventListener('keypress', handleSearch);
+        closeModalButton.onclick = closeModal;
+        modal.onclick = (event) => { if (event.target == modal) closeModal(); };
+        window.onscroll = () => { if (appView.classList.contains('active')) header.classList.toggle('scrolled', window.scrollY > 50); };
+
+        function initializeAppUI() { displayAllMovieRows(); }
+    </script>
+</body>
+
+</html>
