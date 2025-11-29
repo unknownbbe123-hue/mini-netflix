@@ -5,7 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Netflix CSM</title>
-    <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     <style>
@@ -32,15 +31,16 @@
             overflow-x: hidden;
         }
 
-        /* --- View Management --- */
+        /* --- View Management (UPDATED FOR FIX) --- */
         .view {
-            display: none;
+            /* Added !important to ensure hidden views are truly gone */
+            display: none !important; 
             width: 100%;
             min-height: 100vh;
         }
 
         .view.active {
-            display: block;
+            display: block !important;
         }
 
         /* --- BUTTONS --- */
@@ -99,7 +99,8 @@
             z-index: 10;
         }
 
-        .landing-header .logo { display: flex; align-items: center; gap: 10px; }
+        /* FIX: Added white-space: nowrap so text doesn't overlap or wrap */
+        .landing-header .logo { display: flex; align-items: center; gap: 10px; white-space: nowrap; }
         .landing-header .logo img { height: 40px; }
         .landing-header .logo-text { font-size: 1.5rem; font-weight: bold; color: var(--primary-color); }
 
@@ -191,8 +192,9 @@
         #login-view, #register-view {
             background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://assets.nflxext.com/ffe/siteui/vlv3/51e5354A-056A-444E-A023-01878A03E39B/33580556-cfaa-4573-b3c9-3a5f1f5e1b9c/IN-en-20240408-popsignuptwoweeks-perspective_alpha_website_small.jpg');
             background-size: cover;
+            /* FIX: Ensure background doesn't move when scrolling on mobile */
+            background-attachment: fixed;
             position: relative;
-            /* FIX: Force full height and no scroll on desktop */
             height: 100vh;
             width: 100vw;
             overflow: hidden; 
@@ -266,8 +268,12 @@
         }
         .header.scrolled { background-color: var(--background-color); }
         .header-left, .header-right, .main-nav, .user-profile { display: flex; align-items: center; gap: 25px; }
+        
+        /* FIX: Added white-space: nowrap to prevent overlap */
+        .logo { display: flex; align-items: center; white-space: nowrap; }
         .logo img { height: 25px; }
         .logo .logo-subtext { color: var(--primary-color); font-weight: bold; font-size: 1.2rem; margin-left: 5px; }
+        
         .main-nav a { color: var(--text-color); text-decoration: none; font-weight: 500; transition: color 0.3s; cursor: pointer; }
         .main-nav a:hover { color: #b3b3b3; }
         .search-box { display: flex; align-items: center; background: rgba(0, 0, 0, 0.7); border: 1px solid rgba(255, 255, 255, 0.7); padding: 5px; border-radius: 4px; }
@@ -359,9 +365,6 @@
 
 <body>
 
-    <!-- 
-      VIEW 0: LANDING PAGE (Matches your screenshot)
-    -->
     <div id="landing-view" class="view active">
         <div class="landing-header">
             <div class="logo">
@@ -379,7 +382,6 @@
 
         <div class="landing-content">
             <h1>Unlimited movies, shows, and more</h1>
-            <!-- Changed text to be FREE as requested -->
             <p class="sub-header">Watch anywhere. Free to use.</p>
             <p class="cta-text">Ready to watch? Enter your email to create or restart your membership.</p>
             
@@ -393,11 +395,7 @@
         </div>
     </div>
 
-    <!-- 
-      VIEW 1: LOGIN 
-    -->
     <div id="login-view" class="view auth-view">
-        <!-- Header for Login View to go back home -->
         <div class="simple-header">
             <img src="https://image.tmdb.org/t/p/original/wwemzKWzjKYJFfCeiB57q3r4Bcm.svg" alt="Netflix" class="header-logo" id="login-logo-link">
         </div>
@@ -433,9 +431,6 @@
         </div>
     </div>
 
-    <!-- 
-      VIEW 2: REGISTER 
-    -->
     <div id="register-view" class="view auth-view">
          <div class="simple-header">
             <img src="https://image.tmdb.org/t/p/original/wwemzKWzjKYJFfCeiB57q3r4Bcm.svg" alt="Netflix" class="header-logo" id="register-logo-link">
@@ -467,9 +462,6 @@
         </div>
     </div>
 
-    <!-- 
-      VIEW 3: MAIN APP
-    -->
     <div id="app-view" class="view">
         <header class="header">
             <div class="header-left">
@@ -504,25 +496,20 @@
         </header>
 
         <main>
-            <!-- Hero section will be populated by JS -->
             <section id="hero"></section>
-            <!-- Movie rows will be populated by JS -->
             <div id="movie-rows"></div>
         </main>
 
-        <!-- Movie Detail Modal -->
         <div id="movie-modal" class="modal">
             <div class="modal-content">
                 <span class="close-button">&times;</span>
                 <div class="modal-body-wrapper">
-                    <!-- Modal body will be populated by JS -->
                     <div id="modal-body"></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Firebase and App Logic -->
     <script type="module">
         // --- Firebase SDK Imports ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
